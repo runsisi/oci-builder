@@ -276,6 +276,14 @@ echo \"Warning: Fake initctl called, doing nothing\"" > "$TARGET/sbin/initctl"
 	  chmod 755 "$TARGET/sbin/initctl"
 	fi
 
+	# prevent init scripts from adding/removing during install/update
+	mv "$TARGET/usr/sbin/update-rc.d" "$TARGET/usr/sbin/update-rc.d.REAL"
+	echo \
+"#!/bin/sh
+echo
+echo \"Warning: Fake update-rc.d called, doing nothing\"" > "$TARGET/usr/sbin/update-rc.d"
+	chmod 755 "$TARGET/usr/sbin/update-rc.d"
+
 	setup_dselect_method apt
 
 	smallyes '' |
@@ -316,6 +324,7 @@ echo \"Warning: Fake initctl called, doing nothing\"" > "$TARGET/sbin/initctl"
 			dpkg_progress $baseprog $bases CONFBASE "Configuring base system" CONFIGURING
 	fi
 
+	mv "$TARGET/usr/sbin/update-rc.d.REAL" "$TARGET/usr/sbin/update-rc.d"
 	if [ -x "$TARGET/sbin/initctl.REAL" ]; then
 		mv "$TARGET/sbin/initctl.REAL" "$TARGET/sbin/initctl"
 	fi
