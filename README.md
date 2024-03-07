@@ -12,7 +12,9 @@ http://10.0.1.70/xcube/kylin-oci-builder/packages
 
 # build image
 
-mkoci-rpm.sh 用于构建 Kylin V10 Server 容器镜像，支持在 Kylin V10 Server 上运行。
+mkoci-rpm.sh 用于构建 Kylin V10 Server 容器镜像，支持在 Kylin V10 Server 宿主机上运行。
+
+由于制作基础镜像使用的 rpm 安装源参数读取自宿主机，因此制作不同 Kylin V10 Server 版本镜像（如 2204, 2310 等），需要在安装有不同 Kylin V10 Server 版本的宿主机上运行。
 
 ```sh
 ❯ ./mkoci-rpm.sh -h
@@ -26,7 +28,9 @@ OPTIONS:
   --no-push                   Do not push image to registry (i.e., local container & image will be kept).
 ```
 
-mkoci-deb.sh 用于构建 Kylin V10 Desktop 以及 Kylin V4 Server/Desktop 容器镜像，支持在 Kylin V10 Desktop 以及 Kylin V4 Server/Desktop 上运行，可以在同一台机器上完成所有三种系统容器镜像的构建。
+mkoci-deb.sh 用于构建 Kylin V10 Desktop 以及 Kylin V4 Server/Desktop 容器镜像，支持在 Kylin V10 Desktop 以及 Kylin V4 Server/Desktop 宿主机上运行，可以在同一台机器上完成所有三种系统容器镜像的构建。
+
+由于制作基础镜像使用的 deb 安装源参数来自命令行参数，因此制作不同版本镜像（如 4.0.2sp3, 4.0.2sp3 等），需要通过 `--suite`, `--extra-suites` 指定安装源（当前 V4 默认使用最新的 4.0.2sp4 版本）。
 
 ```sh
 ❯ ./mkoci-deb.sh -h
@@ -37,8 +41,9 @@ OPTIONS:
   --v4-desktop                Build oci image for Kylin V4 Desktop.
   -n, --name <name>           Image name (default "kylin-desktop").
   -t, --tag <tag>             Image tag (default "v10-20240307").
-  --suite                     Enable apt repository suite (default "10.1-2303-updates").
-  --extra-suites              Enable apt repository extra suites (default "10.1").
+  -m, --mirror <mirror>       APT repository URL (default "http://archive.kylinos.cn/kylin/KYLIN-ALL").
+  --suite                     Enable APT repository suite (default "10.1-2303-updates").
+  --extra-suites              Enable APT repository extra suites (default "10.1").
   -r, --registry <registry>   Image registry to push (default "192.168.1.71:5000").
   --no-policy                 Do not generate default policy (i.e., "insecureAcceptAnything").
   --no-push                   Do not push image to registry (i.e., local container & image will be kept).
