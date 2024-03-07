@@ -10,7 +10,7 @@ Kylin V10 上构建的 buildah 由于依赖高版本 GLIBC，无法在 Kylin V4 
 
 http://10.0.1.70/xcube/kylin-oci-builder/packages
 
-# build image
+# build scripts
 
 mkoci-rpm.sh 用于构建 Kylin V10 Server 容器镜像，支持在 Kylin V10 Server 宿主机上运行。
 
@@ -48,6 +48,8 @@ OPTIONS:
   --no-policy                 Do not generate default policy (i.e., "insecureAcceptAnything").
   --no-push                   Do not push image to registry (i.e., local container & image will be kept).
 ```
+
+# image building
 
 ## Kylin V10 Server
 
