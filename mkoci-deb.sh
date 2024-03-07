@@ -182,7 +182,7 @@ rootfsDir=$(buildah mount $contName)
 
 # build
 
-includes=vim
+includes=
 extra_cmdline=
 
 if [ $v4Server -ne 0 ] || [ $v4Desktop -ne 0 ]; then
