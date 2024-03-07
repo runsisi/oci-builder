@@ -9,6 +9,7 @@ fi
 
 IMAGE=${IMAGE:=kylin-desktop}
 TAG=${TAG:=v10-$(date +%Y%m%d)}
+MIRROR=${MIRROR:=http://archive.kylinos.cn/kylin/KYLIN-ALL}
 SUITE=${SUITE:=10.1-2303-updates}
 EXTRA_SUITES=${EXTRA_SUITES:=10.1}
 REGISTRY=${REGISTRY:=192.168.1.71:5000}
@@ -32,8 +33,9 @@ OPTIONS:
   --v4-desktop                Build oci image for Kylin V4 Desktop.
   -n, --name <name>           Image name (default "$IMAGE").
   -t, --tag <tag>             Image tag (default "$TAG").
-  --suite                     Enable apt repository suite (default "$SUITE").
-  --extra-suites              Enable apt repository extra suites (default "$EXTRA_SUITES").
+  -m, --mirror <mirror>       APT repository URL (default "$MIRROR").
+  --suite                     Enable APT repository suite (default "$SUITE").
+  --extra-suites              Enable APT repository extra suites (default "$EXTRA_SUITES").
   -r, --registry <registry>   Image registry to push (default "$REGISTRY").
   --no-policy                 Do not generate default policy (i.e., "insecureAcceptAnything").
   --no-push                   Do not push image to registry (i.e., local container & image will be kept).
@@ -43,8 +45,8 @@ EOOPTS
 
 # parse options
 
-if ! options=$(getopt -o 'hn:t:r:' \
-    -l 'help,v4-server,v4-desktop,name:,tag:,suite:,extra-suites:,registry:,no-policy,no-push' -- "$@"); then
+if ! options=$(getopt -o 'hn:t:m:r:' \
+    -l 'help,v4-server,v4-desktop,name:,tag:,mirror:,suite:,extra-suites:,registry:,no-policy,no-push' -- "$@"); then
     usage
 fi
 eval set -- "$options"
@@ -63,11 +65,15 @@ while [ $# -gt 0 ]; do
       shift
       ;;
     -n | --name)
-      opt_name="$2"
+      opt_image="$2"
       shift 2
       ;;
     -t | --tag)
       opt_tag="$2"
+      shift 2
+      ;;
+    -m | --mirror)
+      MIRROR="$2"
       shift 2
       ;;
     --suite)
@@ -208,7 +214,7 @@ export DEBOOTSTRAP_DIR="$SCRIPT_DIR/debootstrap"
 --variant minbase \
 $extra_cmdline \
 $SUITE "$rootfsDir" \
-http://archive.kylinos.cn/kylin/KYLIN-ALL gutsy
+$MIRROR gutsy
 
 # tweaks
 
