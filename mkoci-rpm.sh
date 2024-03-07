@@ -19,7 +19,7 @@ rootfsDir=
 noPolicy=0
 noPush=0
 
-install_packages=(coreutils bash)
+install_packages=(coreutils bash rootfiles)
 install_packages+=(yum)
 
 SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
