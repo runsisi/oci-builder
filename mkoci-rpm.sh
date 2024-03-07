@@ -11,6 +11,8 @@ IMAGE=${IMAGE:=kylin-server}
 TAG=${TAG:=10}
 REGISTRY=${REGISTRY:=192.168.1.71:5000}
 
+TEMP_REPO=/etc/yum.repos.d/mkoci.repo
+
 contName=
 imageId=
 rootfsDir=
@@ -19,6 +21,8 @@ noPush=0
 
 install_packages=(coreutils bash yum)
 install_packages+=(vim)
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 
 usage() {
   cat << EOOPTS
@@ -116,6 +120,8 @@ buildah() {
 trap exit INT TERM
 trap cleanup_on_exit EXIT
 cleanup_on_exit() {
+  rm -f $TEMP_REPO
+
   if [ $noPush -eq 0 ]; then
     test -n "$contName" && buildah rm $contName
     test -n "$imageId" && buildah rmi $imageId
@@ -137,6 +143,13 @@ if [ -f /etc/dnf/dnf.conf ] && command -v dnf > /dev/null; then
 	yum_config=/etc/dnf/dnf.conf
 	alias yum=dnf
 fi
+
+cat > $TEMP_REPO <<EOF
+[mkoci]
+name = mkoci
+baseurl = file:///$SCRIPT_DIR/kylin
+gpgcheck = 0
+EOF
 
 mkdir -m 755 "$rootfsDir"/dev
 mknod -m 600 "$rootfsDir"/dev/console c 5 1
