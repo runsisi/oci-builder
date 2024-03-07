@@ -173,7 +173,11 @@ yum -c "$yum_config" --installroot="$rootfsDir" --refresh -y upgrade
 yum -c "$yum_config" --installroot="$rootfsDir" -y clean all
 
 # locales
-rm -rf "$rootfsDir"/usr/{{lib,share}/locale,{lib,lib64}/gconv,bin/localedef,sbin/build-locale-archive}
+rm -rf "$rootfsDir"/usr/{{lib,share}/locale,bin/localedef,sbin/build-locale-archive}
+# do not delete ISO8859-1.so, gdb needs it
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/gconv 2> /dev/null | xargs -d '\n' -I{} rm -f "$rootfsDir"/usr/lib/gconv/{}
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib64/gconv 2> /dev/null | xargs -d '\n' -I{} rm -f "$rootfsDir"/usr/lib64/gconv/{}
+
 # docs and man pages
 rm -rf "$rootfsDir"/usr/share/{man,doc,info,gnome/help}
 # cracklib
