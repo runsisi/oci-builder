@@ -8,7 +8,7 @@ if ! command -v rpm > /dev/null; then
 fi
 
 IMAGE=${IMAGE:=kylin-server}
-TAG=${TAG:=10}
+TAG=${TAG:=v10-$(date +%Y%m%d)}
 REGISTRY=${REGISTRY:=192.168.1.71:5000}
 
 TEMP_REPO=/etc/yum.repos.d/mkoci.repo

@@ -8,7 +8,7 @@ if ! command -v dpkg > /dev/null; then
 fi
 
 IMAGE=${IMAGE:=kylin-desktop}
-TAG=${TAG:=10}
+TAG=${TAG:=v10-$(date +%Y%m%d)}
 SUITE=${SUITE:=10.1-2303-updates}
 EXTRA_SUITES=${EXTRA_SUITES:=10.1}
 REGISTRY=${REGISTRY:=192.168.1.71:5000}
@@ -106,14 +106,14 @@ fi
 
 if [ $v4Server -ne 0 ]; then
   IMAGE=${opt_image:=kylin-server}
-  TAG=${opt_tag:=4}
+  TAG=${opt_tag:=v4-$(date +%Y%m%d)}
   SUITE=${opt_suite:=4.0.2sp4-server}
   EXTRA_SUITES=${opt_extra_suites:=}
 fi
 
 if [ $v4Desktop -ne 0 ]; then
   IMAGE=${opt_image:=kylin-desktop}
-  TAG=${opt_tag:=4}
+  TAG=${opt_tag:=v4-$(date +%Y%m%d)}
   SUITE=${opt_suite:=4.0.2sp4}
   EXTRA_SUITES=${opt_extra_suites:=}
 fi
