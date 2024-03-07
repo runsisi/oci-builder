@@ -15,16 +15,12 @@ http://10.0.1.70/xcube/kylin-oci-builder/packages
 mkoci-rpm.sh 用于构建 Kylin V10 Server 容器镜像，支持在 Kylin V10 Server 上运行。
 
 ```sh
-❯ ./mkoci-deb.sh -h
-mkoci-deb.sh [OPTIONS]
+❯ ./mkoci-rpm.sh -h
+mkoci-rpm.sh [OPTIONS]
 OPTIONS:
   -h, --help                  Print this help message.
-  --v4-server                 Build oci image for Kylin V4 Server.
-  --v4-desktop                Build oci image for Kylin V4 Desktop.
-  -n, --name <name>           Image name (default "kylin/desktop").
-  -t, --tag <tag>             Image tag (default "10").
-  --suite                     Enable apt repository suite (default "10.1-2303-updates").
-  --extra-suites              Enable apt repository extra suites (default "10.1").
+  -n, --name <name>           Image name (default "kylin-server").
+  -t, --tag <tag>             Image tag (default "10-20240307").
   -r, --registry <registry>   Image registry to push (default "192.168.1.71:5000").
   --no-policy                 Do not generate default policy (i.e., "insecureAcceptAnything").
   --no-push                   Do not push image to registry (i.e., local container & image will be kept).
@@ -39,8 +35,8 @@ OPTIONS:
   -h, --help                  Print this help message.
   --v4-server                 Build oci image for Kylin V4 Server.
   --v4-desktop                Build oci image for Kylin V4 Desktop.
-  -n, --name <name>           Image name (default "kylin/desktop").
-  -t, --tag <tag>             Image tag (default "10").
+  -n, --name <name>           Image name (default "kylin-desktop").
+  -t, --tag <tag>             Image tag (default "v10-20240307").
   --suite                     Enable apt repository suite (default "10.1-2303-updates").
   --extra-suites              Enable apt repository extra suites (default "10.1").
   -r, --registry <registry>   Image registry to push (default "192.168.1.71:5000").
