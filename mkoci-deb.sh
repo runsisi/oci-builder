@@ -275,6 +275,17 @@ chroot apt-get clean
 rm -rf "$rootfsDir/var/lib/apt/lists"/*
 rm -f "$rootfsDir/var/cache/apt"/*.bin
 
+# locales
+rm -rf "$rootfsDir"/usr/{{lib,share}/locale,bin/localedef}
+# do not delete ISO8859-1.so, gdb needs it
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv 2> /dev/null | xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv/{}
+# docs and man pages
+rm -rf "$rootfsDir"/usr/share/{man,doc,info}
+# ldconfig
+# rm -f "$rootfsDir"/etc/ld.so.cache
+rm -rf "$rootfsDir"/var/cache/ldconfig
+mkdir -p -m 755 "$rootfsDir"/var/cache/ldconfig
+
 # commit
 
 buildah config --cmd /bin/bash $contName
