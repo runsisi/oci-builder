@@ -188,9 +188,8 @@ yum -c "$yum_config" --installroot="$rootfsDir" -y clean all
 # locales
 rm -rf "$rootfsDir"/usr/{{lib,share}/locale,bin/localedef,sbin/build-locale-archive}
 # do not delete ISO8859-1.so, gdb needs it
-ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/gconv 2> /dev/null | xargs -d '\n' -I{} rm -f "$rootfsDir"/usr/lib/gconv/{}
-ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib64/gconv 2> /dev/null | xargs -d '\n' -I{} rm -f "$rootfsDir"/usr/lib64/gconv/{}
-
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/gconv 2> /dev/null | xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib/gconv/{}
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib64/gconv 2> /dev/null | xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib64/gconv/{}
 # docs and man pages
 rm -rf "$rootfsDir"/usr/share/{man,doc,info,gnome/help}
 # cracklib
@@ -203,7 +202,7 @@ mkdir -p -m 755 "$rootfsDir"/var/cache/yum
 # sln
 rm -rf "$rootfsDir"/sbin/sln
 # ldconfig
-# rm -rf "$rootfsDir"/etc/ld.so.cache
+# rm -f "$rootfsDir"/etc/ld.so.cache
 rm -rf "$rootfsDir"/var/cache/ldconfig
 mkdir -p -m 755 "$rootfsDir"/var/cache/ldconfig
 
