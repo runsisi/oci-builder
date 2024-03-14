@@ -282,7 +282,7 @@ ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/aarch64-linux-g
 # docs and man pages
 rm -rf "$rootfsDir"/usr/share/{man,doc,info}
 # ldconfig
-# rm -f "$rootfsDir"/etc/ld.so.cache
+rm -f "$rootfsDir"/etc/ld.so.cache
 rm -rf "$rootfsDir"/var/cache/ldconfig
 mkdir -p -m 755 "$rootfsDir"/var/cache/ldconfig
 

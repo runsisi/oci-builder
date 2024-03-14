@@ -202,6 +202,7 @@ mkdir -p -m 755 "$rootfsDir"/var/cache/yum
 # sln
 rm -rf "$rootfsDir"/sbin/sln
 # ldconfig
+# yum fails if ld.so.cache is removed
 # rm -f "$rootfsDir"/etc/ld.so.cache
 rm -rf "$rootfsDir"/var/cache/ldconfig
 mkdir -p -m 755 "$rootfsDir"/var/cache/ldconfig
