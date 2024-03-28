@@ -156,18 +156,8 @@ if [ -z "$buildahPath" ]; then
     exit 1
 fi
 
-chrootPath="$(command -v chroot || :)"
-if [ -z "$chrootPath" ]; then
-    echo >&2 "error - chroot not found"
-    exit 1
-fi
-
 buildah() {
     "$buildahPath" "$@"
-}
-
-chroot() {
-    PATH='/usr/sbin:/usr/bin:/sbin:/bin' "$chrootPath" "$rootfsDir" "$@"
 }
 
 # cleanup on exit
@@ -179,9 +169,11 @@ cleanup_on_exit() {
         test -n "$contName" && buildah rm $contName
         test -n "$imageId" && buildah rmi $imageId
     else
-        test -n "$contName" && echo "container: $contName"
-        test -n "$imageId" && echo "image id:  $imageId"
+        test -n "$contName" && echo ">>> container: $contName"
+        test -n "$imageId" && echo ">>> image id:  $imageId"
     fi
+
+    test -n "$rootfsDir" && buildah umount $contName
 }
 
 # setup
@@ -229,7 +221,7 @@ EOF
 chmod +x "$rootfsDir/usr/sbin/policy-rc.d"
 
 # prevent upstart scripts from running during install/update
-chroot dpkg-divert --local --rename --add /sbin/initctl
+buildah run $contName -- dpkg-divert --local --rename --add /sbin/initctl
 cat >"$rootfsDir/sbin/initctl" <<EOF
 #!/bin/sh
 exit 0
@@ -271,10 +263,10 @@ fi
 
 # finalize
 
-chroot sh -c 'apt-get -f install -y && apt-get update && apt-get dist-upgrade -y'
+buildah run $contName -- sh -c 'apt-get -f install -y && apt-get update && apt-get dist-upgrade -y'
 
-chroot apt-get autoremove
-chroot apt-get clean
+buildah run $contName -- apt-get autoremove
+buildah run $contName -- apt-get clean
 rm -rf "$rootfsDir/var/lib/apt/lists"/*
 rm -f "$rootfsDir/var/cache/apt"/*.bin
 
@@ -298,5 +290,5 @@ imageId=$(buildah commit $contName $IMAGE:$TAG)
 
 if [ $noPush -eq 0 ]; then
     buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:$TAG
-    echo "success - pushed \"$IMAGE:$TAG\" to registry"
+    echo ">>> pushed \"$IMAGE:$TAG\" to registry"
 fi

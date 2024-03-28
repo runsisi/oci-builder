@@ -129,9 +129,11 @@ cleanup_on_exit() {
         test -n "$contName" && buildah rm $contName
         test -n "$imageId" && buildah rmi $imageId
     else
-        test -n "$contName" && echo "container: $contName"
-        test -n "$imageId" && echo "image id:  $imageId"
+        test -n "$contName" && echo ">>> container: $contName"
+        test -n "$imageId" && echo ">>> image id:  $imageId"
     fi
+
+    test -n "$rootfsDir" && buildah umount $contName
 }
 
 # setup
@@ -219,5 +221,5 @@ imageId=$(buildah commit $contName $IMAGE:$TAG)
 
 if [ $noPush -eq 0 ]; then
     buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:$TAG
-    echo "success - pushed \"$IMAGE:$TAG\" to registry"
+    echo ">>> pushed \"$IMAGE:$TAG\" to registry"
 fi
