@@ -33,6 +33,17 @@ echo 'export PATH=/opt/go/bin:/opt/node-v20.11.1-linux-arm64/bin:$PATH' >> $root
 echo 'registry=https://registry.npmmirror.com/' >> $root/root/.npmrc
 echo 'ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/' >> $root/root/.npmrc
 echo 'export SASS_BINARY_PATH=/opt/node-sass.node' >> $root/root/.bashrc
+cat >$root/root/.gitconfig <<EOF
+[alias]
+    br = branch
+    st = status
+    ci = commit
+    co = checkout
+    log1 = log --oneline
+    cp = cherry-pick
+[safe]
+    directory = *
+EOF
 
 buildah run ubuntu-23.04 -- apt dist-upgrade -y
 buildah run ubuntu-23.04 -- apt autoremove
