@@ -21,9 +21,9 @@ make git vim python3 wget unzip \
 gcc g++ \
 gcc-x86-64-linux-gnu gcc-mingw-w64-x86-64
 
-wget -P $root/opt http://192.168.1.71/xcubed/oci-builder/go1.22.1.linux-arm64.tar.gz
-wget -P $root/opt http://192.168.1.71/xcubed/oci-builder/node-v20.11.1-linux-arm64.tar.xz
-wget -P $root/opt http://192.168.1.71/xcubed/oci-builder/node-sass.node
+wget -P $root/opt http://192.168.1.71/dev-tools/go1.22.1.linux-arm64.tar.gz
+wget -P $root/opt http://192.168.1.71/dev-tools/node-v20.11.1-linux-arm64.tar.xz
+wget -P $root/opt http://192.168.1.71/dev-tools/node-sass.node
 tar xzf $root/opt/go1.22.1.linux-arm64.tar.gz -C $root/opt
 tar xf $root/opt/node-v20.11.1-linux-arm64.tar.xz -C $root/opt
 rm -f $root/opt/go1.22.1.linux-arm64.tar.gz
@@ -31,6 +31,7 @@ rm -f $root/opt/node-v20.11.1-linux-arm64.tar.xz
 
 echo 'export PATH=/opt/go/bin:/opt/node-v20.11.1-linux-arm64/bin:$PATH' >> $root/root/.bashrc
 echo 'registry=https://registry.npmmirror.com/' >> $root/root/.npmrc
+echo 'ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/' >> $root/root/.npmrc
 echo 'export SASS_BINARY_PATH=/opt/node-sass.node' >> $root/root/.bashrc
 
 buildah run ubuntu-23.04 -- apt dist-upgrade -y
