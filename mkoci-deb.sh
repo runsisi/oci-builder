@@ -2,9 +2,9 @@
 
 set -e
 
-if ! command -v dpkg > /dev/null; then
-  echo >&2 "error - please run on deb based distributions"
-  exit 1
+if ! command -v dpkg >/dev/null; then
+    echo >&2 "error - please run on deb based distributions"
+    exit 1
 fi
 
 IMAGE=${IMAGE:=kylin-desktop}
@@ -22,25 +22,28 @@ rootfsDir=
 noPolicy=0
 noPush=0
 
-SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+SCRIPT_DIR=$(
+    cd "$(dirname "$0")"
+    pwd
+)
 
 usage() {
-  cat << EOOPTS
+    cat <<EOF
 $(basename $0) [OPTIONS]
 OPTIONS:
-  -h, --help                  Print this help message.
-  --v4-server                 Build oci image for Kylin V4 Server.
-  --v4-desktop                Build oci image for Kylin V4 Desktop.
-  -n, --name <name>           Image name (default "$IMAGE").
-  -t, --tag <tag>             Image tag (default "$TAG").
-  -m, --mirror <mirror>       APT repository URL (default "$MIRROR").
-  --suite                     Enable APT repository suite (default "$SUITE").
-  --extra-suites              Enable APT repository extra suites (default "$EXTRA_SUITES").
-  -r, --registry <registry>   Image registry to push (default "$REGISTRY").
-  --no-policy                 Do not generate default policy (i.e., "insecureAcceptAnything").
-  --no-push                   Do not push image to registry (i.e., local container & image will be kept).
-EOOPTS
-  exit 1
+    -h, --help                  Print this help message.
+    --v4-server                 Build oci image for Kylin V4 Server.
+    --v4-desktop                Build oci image for Kylin V4 Desktop.
+    -n, --name <name>           Image name (default "$IMAGE").
+    -t, --tag <tag>             Image tag (default "$TAG").
+    -m, --mirror <mirror>       APT repository URL (default "$MIRROR").
+    --suite                     Enable APT repository suite (default "$SUITE").
+    --extra-suites              Enable APT repository extra suites (default "$EXTRA_SUITES").
+    -r, --registry <registry>   Image registry to push (default "$REGISTRY").
+    --no-policy                 Do not generate default policy (i.e., "insecureAcceptAnything").
+    --no-push                   Do not push image to registry (i.e., local container & image will be kept).
+EOF
+    exit 1
 }
 
 # parse options
@@ -55,87 +58,87 @@ unset options
 while [ $# -gt 0 ]; do
     case $1 in
     --v4-server)
-      v4Server=1
-      v4Desktop=0
-      shift
-      ;;
+        v4Server=1
+        v4Desktop=0
+        shift
+        ;;
     --v4-desktop)
-      v4Server=0
-      v4Desktop=1
-      shift
-      ;;
+        v4Server=0
+        v4Desktop=1
+        shift
+        ;;
     -n | --name)
-      opt_image="$2"
-      shift 2
-      ;;
+        opt_image="$2"
+        shift 2
+        ;;
     -t | --tag)
-      opt_tag="$2"
-      shift 2
-      ;;
+        opt_tag="$2"
+        shift 2
+        ;;
     -m | --mirror)
-      MIRROR="$2"
-      shift 2
-      ;;
+        MIRROR="$2"
+        shift 2
+        ;;
     --suite)
-      opt_suite="$2"
-      shift 2
-      ;;
+        opt_suite="$2"
+        shift 2
+        ;;
     --extra-suites)
-      opt_extra_suites="$2"
-      shift 2
-      ;;
+        opt_extra_suites="$2"
+        shift 2
+        ;;
     -r | --registry)
-      REGISTRY="$2"
-      shift 2
-      ;;
+        REGISTRY="$2"
+        shift 2
+        ;;
     --no-policy)
-      noPolicy=1
-      shift
-      ;;
+        noPolicy=1
+        shift
+        ;;
     --no-push)
-      noPush=1
-      shift
-      ;;
+        noPush=1
+        shift
+        ;;
     -h | --help) usage ;;
     --)
-      shift
-      break
-      ;;
+        shift
+        break
+        ;;
     esac
 done
 
 if [ $# -gt 0 ]; then
-  echo >&2 "error - excess arguments \"$*\""
-  echo >&2
-  usage
+    echo >&2 "error - excess arguments \"$*\""
+    echo >&2
+    usage
 fi
 
 if [ $v4Server -ne 0 ]; then
-  IMAGE=${opt_image:=kylin-server}
-  TAG=${opt_tag:=v4-$(date +%Y%m%d)}
-  SUITE=${opt_suite:=4.0.2sp4-server}
-  EXTRA_SUITES=${opt_extra_suites:=}
+    IMAGE=${opt_image:=kylin-server}
+    TAG=${opt_tag:=v4-$(date +%Y%m%d)}
+    SUITE=${opt_suite:=4.0.2sp4-server}
+    EXTRA_SUITES=${opt_extra_suites:=}
 fi
 
 if [ $v4Desktop -ne 0 ]; then
-  IMAGE=${opt_image:=kylin-desktop}
-  TAG=${opt_tag:=v4-$(date +%Y%m%d)}
-  SUITE=${opt_suite:=4.0.2sp4}
-  EXTRA_SUITES=${opt_extra_suites:=}
+    IMAGE=${opt_image:=kylin-desktop}
+    TAG=${opt_tag:=v4-$(date +%Y%m%d)}
+    SUITE=${opt_suite:=4.0.2sp4}
+    EXTRA_SUITES=${opt_extra_suites:=}
 fi
 
 if [ $(id -u) -ne 0 ]; then
-  echo >&2 "error - please run as root"
-  exit 1
+    echo >&2 "error - please run as root"
+    exit 1
 fi
 
 if [ ! -e /etc/containers/policy.json ]; then
-  if [ $noPolicy -ne 0 ]; then
-    echo >&2 "error - /etc/containers/policy.json does not exist"
-    exit 1
-  else
-    mkdir -p /etc/containers
-    cat > /etc/containers/policy.json <<EOF
+    if [ $noPolicy -ne 0 ]; then
+        echo >&2 "error - /etc/containers/policy.json does not exist"
+        exit 1
+    else
+        mkdir -p /etc/containers
+        cat >/etc/containers/policy.json <<EOF
 {
     "default": [
         {
@@ -144,27 +147,27 @@ if [ ! -e /etc/containers/policy.json ]; then
     ]
 }
 EOF
-  fi
+    fi
 fi
 
 buildahPath="$(command -v buildah || :)"
 if [ -z "$buildahPath" ]; then
-  echo >&2 "error - buildah not found"
-  exit 1
+    echo >&2 "error - buildah not found"
+    exit 1
 fi
 
 chrootPath="$(command -v chroot || :)"
 if [ -z "$chrootPath" ]; then
-  echo >&2 "error - chroot not found"
-  exit 1
+    echo >&2 "error - chroot not found"
+    exit 1
 fi
 
 buildah() {
-  "$buildahPath" "$@"
+    "$buildahPath" "$@"
 }
 
 chroot() {
-  PATH='/usr/sbin:/usr/bin:/sbin:/bin' "$chrootPath" "$rootfsDir" "$@"
+    PATH='/usr/sbin:/usr/bin:/sbin:/bin' "$chrootPath" "$rootfsDir" "$@"
 }
 
 # cleanup on exit
@@ -172,13 +175,13 @@ chroot() {
 trap exit INT TERM
 trap cleanup_on_exit EXIT
 cleanup_on_exit() {
-  if [ $noPush -eq 0 ]; then
-    test -n "$contName" && buildah rm $contName
-    test -n "$imageId" && buildah rmi $imageId
-  else
-    test -n "$contName" && echo "container: $contName"
-    test -n "$imageId" && echo "image id:  $imageId"
-  fi
+    if [ $noPush -eq 0 ]; then
+        test -n "$contName" && buildah rm $contName
+        test -n "$imageId" && buildah rmi $imageId
+    else
+        test -n "$contName" && echo "container: $contName"
+        test -n "$imageId" && echo "image id:  $imageId"
+    fi
 }
 
 # setup
@@ -192,34 +195,34 @@ includes=
 extra_cmdline=
 
 if [ $v4Server -ne 0 ] || [ $v4Desktop -ne 0 ]; then
-  includes="$includes,kylin-keyring"
+    includes="$includes,kylin-keyring"
 
-  # needs zstd support only post impish, i.e., 21.10
-  extra_cmdline="$extra_cmdline --extractor dpkg-deb"
-  extra_cmdline="$extra_cmdline --no-merged-usr"
+    # needs zstd support only post impish, i.e., 21.10
+    extra_cmdline="$extra_cmdline --extractor dpkg-deb"
+    extra_cmdline="$extra_cmdline --no-merged-usr"
 fi
 
 if [ -n "$EXTRA_SUITES" ]; then
-  extra_cmdline="$extra_cmdline --extra-suites $EXTRA_SUITES"
+    extra_cmdline="$extra_cmdline --extra-suites $EXTRA_SUITES"
 fi
 
 if [ -n "$includes" ]; then
-  extra_cmdline="$extra_cmdline --include $includes"
+    extra_cmdline="$extra_cmdline --include $includes"
 fi
 
 export DEBOOTSTRAP_DIR="$SCRIPT_DIR/debootstrap"
 "$DEBOOTSTRAP_DIR/debootstrap" \
---no-check-gpg \
---components main,universe,multiverse,restricted \
---variant minbase \
-$extra_cmdline \
-$SUITE "$rootfsDir" \
-$MIRROR gutsy
+    --no-check-gpg \
+    --components main,universe,multiverse,restricted \
+    --variant minbase \
+    $extra_cmdline \
+    $SUITE "$rootfsDir" \
+    $MIRROR gutsy
 
 # tweaks
 
 # prevent init scripts from running during install/update
-cat > "$rootfsDir/usr/sbin/policy-rc.d" <<EOF
+cat >"$rootfsDir/usr/sbin/policy-rc.d" <<EOF
 #!/bin/sh
 exit 101
 EOF
@@ -227,7 +230,7 @@ chmod +x "$rootfsDir/usr/sbin/policy-rc.d"
 
 # prevent upstart scripts from running during install/update
 chroot dpkg-divert --local --rename --add /sbin/initctl
-cat > "$rootfsDir/sbin/initctl" <<EOF
+cat >"$rootfsDir/sbin/initctl" <<EOF
 #!/bin/sh
 exit 0
 EOF
@@ -236,15 +239,15 @@ chmod +x "$rootfsDir/sbin/initctl"
 rm -f "$rootfsDir/etc/apt/apt.conf.d/01autoremove-kernels"
 
 if strings "$rootfsDir/usr/bin/dpkg" | grep -q unsafe-io; then
-  # force dpkg not to call sync() after package extraction (speeding up installs)
-  cat > "$rootfsDir/etc/dpkg/dpkg.cfg.d/oci-apt-speedup" <<EOF
+    # force dpkg not to call sync() after package extraction (speeding up installs)
+    cat >"$rootfsDir/etc/dpkg/dpkg.cfg.d/oci-apt-speedup" <<EOF
 force-unsafe-io
 EOF
 fi
 
 if [ -d "$rootfsDir/etc/apt/apt.conf.d" ]; then
-  aptGetClean='"rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb /var/cache/apt/*.bin || true";'
-  cat > "$rootfsDir/etc/apt/apt.conf.d/oci-clean" <<EOF
+    aptGetClean='"rm -f /var/cache/apt/archives/*.deb /var/cache/apt/archives/partial/*.deb /var/cache/apt/*.bin || true";'
+    cat >"$rootfsDir/etc/apt/apt.conf.d/oci-clean" <<EOF
 DPkg::Post-Invoke { ${aptGetClean} };
 APT::Update::Post-Invoke { ${aptGetClean} };
 
@@ -252,16 +255,16 @@ Dir::Cache::pkgcache "";
 Dir::Cache::srcpkgcache "";
 EOF
 
-  cat > "$rootfsDir/etc/apt/apt.conf.d/oci-no-languages" <<EOF
+    cat >"$rootfsDir/etc/apt/apt.conf.d/oci-no-languages" <<EOF
 Acquire::Languages "none";
 EOF
 
-  cat > "$rootfsDir/etc/apt/apt.conf.d/oci-gzip-indexes" <<EOF
+    cat >"$rootfsDir/etc/apt/apt.conf.d/oci-gzip-indexes" <<EOF
 Acquire::GzipIndexes "true";
 Acquire::CompressionTypes::Order:: "gz";
 EOF
 
-  cat > "$rootfsDir/etc/apt/apt.conf.d/oci-autoremove-suggests" <<EOF
+    cat >"$rootfsDir/etc/apt/apt.conf.d/oci-autoremove-suggests" <<EOF
 Apt::AutoRemove::SuggestsImportant "false";
 EOF
 fi
@@ -278,7 +281,7 @@ rm -f "$rootfsDir/var/cache/apt"/*.bin
 # locales
 rm -rf "$rootfsDir"/usr/{{lib,share}/locale,bin/localedef}
 # do not delete ISO8859-1.so, gdb needs it
-ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv 2> /dev/null | xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv/{}
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv 2>/dev/null | xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv/{}
 # docs and man pages
 rm -rf "$rootfsDir"/usr/share/{man,doc,info}
 # ldconfig
@@ -294,6 +297,6 @@ imageId=$(buildah commit $contName $IMAGE:$TAG)
 # push
 
 if [ $noPush -eq 0 ]; then
-  buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:$TAG
-  echo "success - pushed \"$IMAGE:$TAG\" to registry"
+    buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:$TAG
+    echo "success - pushed \"$IMAGE:$TAG\" to registry"
 fi
