@@ -8,7 +8,7 @@ Kylin V10 上构建的 buildah 由于依赖高版本 GLIBC，无法在 Kylin V4 
 
 可以通过如下链接下载在 Kylin V4 Server 上构建的 buildah (v1.34.1) 可执行文件（可以拷贝到 V4/V10 机器上运行，且不区分 Server/Desktop）。
 
-http://10.0.1.70/xcube/kylin-oci-builder/packages
+http://git.xcube.com/xcube/-/packages
 
 # build scripts
 
@@ -49,6 +49,8 @@ OPTIONS:
   --no-push                   Do not push image to registry (i.e., local container & image will be kept).
 ```
 
+mkoci-cross.sh 用于构建基于 Ubuntu 23.04 的交叉编译容器镜像，镜像架构为 arm64，因此脚本需要在 arm64 机器上运行。
+
 # image building
 
 ## Kylin V10 Server
@@ -75,6 +77,12 @@ $ sudo ./mkoci-deb.sh --v4-server
 $ sudo ./mkoci-deb.sh --v4-desktop
 ```
 
+## Ubuntu cross builder
+
+```sh
+$ buildah unshare sh mkoci-cross.sh
+```
+
 # image registry
 
 如果镜像构建成功，默认会推送到如下的镜像仓库，可以通过构建脚本的 `--no-push` 选项禁止这一行为，也可以通过 `--registry` 选项修改默认推送的镜像仓库。
@@ -82,3 +90,5 @@ $ sudo ./mkoci-deb.sh --v4-desktop
 http://192.168.1.71:5000/image/kylin-server
 
 http://192.168.1.71:5000/image/kylin-desktop
+
+http://192.168.1.71:5000/image/ubuntu-23.04-cross-builder
