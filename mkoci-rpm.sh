@@ -221,5 +221,6 @@ imageId=$(buildah commit $contName $IMAGE:$TAG)
 
 if [ $noPush -eq 0 ]; then
     buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:$TAG
+    buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:latest
     echo ">>> pushed \"$IMAGE:$TAG\" to registry"
 fi
