@@ -66,6 +66,11 @@ if [ $# -gt 0 ]; then
     usage
 fi
 
+if [ $(id -u) -eq 0 ]; then
+    echo >&2 "error - please run as a non-root user"
+    exit 1
+fi
+
 if [ "$_CONTAINERS_USERNS_CONFIGURED" != "done" ]; then
     echo >&2 "error - should run with buildah unshare"
     echo >&2
