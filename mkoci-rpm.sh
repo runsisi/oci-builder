@@ -2,30 +2,22 @@
 
 set -e
 
+SCRIPT_DIR=$(cd -P $(dirname $0) && pwd -P)
+cd $SCRIPT_DIR
+
 if ! command -v rpm >/dev/null; then
     echo >&2 "error - please run on rpm based distributions"
     exit 1
 fi
 
-IMAGE=${IMAGE:=kylin-server}
-TAG=${TAG:=v10-$(date +%Y%m%d)}
+IMAGE=${IMAGE:=kylin-server-v10}
+TAG=${TAG:=$(date +%Y%m%d)}
 REGISTRY=${REGISTRY:=192.168.1.71:5000}
 
-TEMP_REPO=/etc/yum.repos.d/mkoci.repo
-
-contName=
-imageId=
-rootfsDir=
 noPolicy=0
 noPush=0
 
-install_packages=(coreutils bash rootfiles)
-install_packages+=(yum)
-
-SCRIPT_DIR=$(
-    cd "$(dirname "$0")"
-    pwd
-)
+install_packages="coreutils bash rootfiles yum"
 
 usage() {
     cat <<EOF
@@ -90,6 +82,16 @@ if [ $(id -u) -ne 0 ]; then
     exit 1
 fi
 
+if [ -z "$(command -v buildah || :)" ]; then
+    echo >&2 "error - buildah not found"
+    exit 1
+fi
+
+if [ "$_CONTAINERS_USERNS_CONFIGURED" = "done" ]; then
+    echo >&2 "error - please do not run under buildah unshare"
+    exit 1
+fi
+
 if [ ! -e /etc/containers/policy.json ]; then
     if [ $noPolicy -ne 0 ]; then
         echo >&2 "error - /etc/containers/policy.json does not exist"
@@ -108,32 +110,25 @@ EOF
     fi
 fi
 
-buildahPath="$(command -v buildah || :)"
-if [ -z "$buildahPath" ]; then
-    echo >&2 "error - buildah not found"
-    exit 1
-fi
-
-buildah() {
-    "$buildahPath" "$@"
-}
-
 # cleanup on exit
+
+contName=
+rootfsDir=
+imageId=
 
 trap exit INT TERM
 trap cleanup_on_exit EXIT
 cleanup_on_exit() {
-    rm -f $TEMP_REPO
+    rm -f $yum_config
 
     if [ $noPush -eq 0 ]; then
         test -n "$contName" && buildah rm $contName
-        test -n "$imageId" && buildah rmi $imageId
+        test -n "$imageId" && buildah rmi -f $imageId
     else
+        test -n "$rootfsDir" && buildah umount $contName
         test -n "$contName" && echo ">>> container: $contName"
         test -n "$imageId" && echo ">>> image id:  $imageId"
     fi
-
-    test -n "$rootfsDir" && buildah umount $contName
 }
 
 # setup
@@ -143,13 +138,13 @@ rootfsDir=$(buildah mount $contName)
 
 # build
 
-yum_config=/etc/yum.conf
 if [ -f /etc/dnf/dnf.conf ] && command -v dnf >/dev/null; then
-    yum_config=/etc/dnf/dnf.conf
     alias yum=dnf
 fi
 
-cat >$TEMP_REPO <<EOF
+yum_config=$(mktemp)
+
+cat >$yum_config <<EOF
 [mkoci]
 name = mkoci
 baseurl = file:///$SCRIPT_DIR/kylin
@@ -168,15 +163,9 @@ mknod -m 666 "$rootfsDir"/dev/tty0 c 4 0
 mknod -m 666 "$rootfsDir"/dev/urandom c 1 9
 mknod -m 666 "$rootfsDir"/dev/zero c 1 5
 
-# amazon linux yum will fail without vars set
-if [ -d /etc/yum/vars ]; then
-    mkdir -p -m 755 "$rootfsDir"/etc/yum
-    cp -a /etc/yum/vars "$rootfsDir"/etc/yum/
-fi
-
-if [[ -n "$install_packages" ]]; then
+if [ -n "$install_packages" ]; then
     yum -c "$yum_config" --installroot="$rootfsDir" --releasever=/ --setopt=tsflags=nodocs \
-        --setopt=group_package_types=mandatory -y install "${install_packages[@]}"
+        --setopt=group_package_types=mandatory -y install $install_packages
 fi
 
 cat >"$rootfsDir"/etc/sysconfig/network <<EOF
@@ -186,15 +175,17 @@ EOF
 
 # finalize
 
-yum -c "$yum_config" --installroot="$rootfsDir" --refresh -y upgrade
+yum -c $yum_config --installroot="$rootfsDir" --refresh -y upgrade
 
-yum -c "$yum_config" --installroot="$rootfsDir" -y clean all
+yum -c $yum_config --installroot="$rootfsDir" -y clean all
 
 # locales
 rm -rf "$rootfsDir"/usr/{{lib,share}/locale,bin/localedef,sbin/build-locale-archive}
 # do not delete ISO8859-1.so, gdb needs it
-ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/gconv 2>/dev/null | xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib/gconv/{}
-ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib64/gconv 2>/dev/null | xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib64/gconv/{}
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/gconv 2>/dev/null |
+    xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib/gconv/{}
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib64/gconv 2>/dev/null |
+    xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib64/gconv/{}
 # docs and man pages
 rm -rf "$rootfsDir"/usr/share/{man,doc,info,gnome/help}
 # cracklib
@@ -207,7 +198,7 @@ mkdir -p -m 755 "$rootfsDir"/var/cache/yum
 # sln
 rm -rf "$rootfsDir"/sbin/sln
 # ldconfig
-# yum fails if ld.so.cache is removed
+# on kylin yum fails if ld.so.cache is removed
 # rm -f "$rootfsDir"/etc/ld.so.cache
 rm -rf "$rootfsDir"/var/cache/ldconfig
 mkdir -p -m 755 "$rootfsDir"/var/cache/ldconfig
@@ -217,9 +208,12 @@ mkdir -p -m 755 "$rootfsDir"/var/cache/ldconfig
 buildah config --cmd /bin/bash $contName
 imageId=$(buildah commit $contName $IMAGE:$TAG)
 
+buildah tag $imageId $IMAGE:latest
+
 # push
 
 if [ $noPush -eq 0 ]; then
     buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:$TAG
+    buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:latest
     echo ">>> pushed \"$IMAGE:$TAG\" to registry"
 fi

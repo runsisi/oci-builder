@@ -17,7 +17,7 @@ mkoci-rpm.sh 用于构建 Kylin V10 Server 容器镜像，支持在 Kylin V10 Se
 由于制作基础镜像使用的 rpm 安装源参数读取自宿主机，因此制作不同 Kylin V10 Server 版本镜像（如 2204, 2310 等），需要在安装有不同 Kylin V10 Server 版本的宿主机上运行。
 
 ```sh
-❯ ./mkoci-rpm.sh -h
+$ ./mkoci-rpm.sh -h
 mkoci-rpm.sh [OPTIONS]
 OPTIONS:
   -h, --help                  Print this help message.
@@ -33,7 +33,7 @@ mkoci-deb.sh 用于构建 Kylin V10 Desktop 以及 Kylin V4 Server/Desktop 容�
 由于制作基础镜像使用的 deb 安装源参数来自命令行参数，因此制作不同版本镜像（如 4.0.2sp3, 4.0.2sp3 等），需要通过 `--suite`, `--extra-suites` 指定安装源（当前 V4 默认使用最新的 4.0.2sp4 版本）。
 
 ```sh
-❯ ./mkoci-deb.sh -h
+$ ./mkoci-deb.sh -h
 mkoci-deb.sh [OPTIONS]
 OPTIONS:
   -h, --help                  Print this help message.
@@ -49,7 +49,19 @@ OPTIONS:
   --no-push                   Do not push image to registry (i.e., local container & image will be kept).
 ```
 
-mkoci-cross.sh 用于构建基于 Ubuntu 23.04 的交叉编译容器镜像，镜像架构为 arm64，因此脚本需要在 arm64 机器上运行。
+mkoci-cross.sh 用于构建基于 Ubuntu 23.04 的交叉编译容器镜像，镜像架构为 arm64，因此脚本需要在 arm64 机器上运行（前面两个脚本显然也一样）。
+
+```sh
+$ ./mkoci-cross.sh -h
+buildah unshare sh mkoci-cross.sh [OPTIONS]
+OPTIONS:
+    -h, --help                  Print this help message.
+    -n, --name <name>           Image name (default "ubuntu-23.04-cross-builder").
+    -t, --tag <tag>             Image tag (default "20240329").
+    -r, --registry <registry>   Image registry to push (default "192.168.1.71:5000").
+    --no-policy                 Do not generate default policy (i.e., "insecureAcceptAnything").
+    --no-push                   Do not push image to registry (i.e., local container & image will be kept).
+```
 
 # image building
 
@@ -80,7 +92,7 @@ $ sudo ./mkoci-deb.sh --v4-desktop
 ## Ubuntu cross builder
 
 ```sh
-$ buildah unshare sh mkoci-cross.sh
+$ sudo ./mkoci-cross.sh
 ```
 
 # image registry

@@ -2,13 +2,16 @@
 
 set -e
 
+SCRIPT_DIR=$(cd -P $(dirname $0) && pwd -P)
+cd $SCRIPT_DIR
+
 if ! command -v dpkg >/dev/null; then
     echo >&2 "error - please run on deb based distributions"
     exit 1
 fi
 
-IMAGE=${IMAGE:=kylin-desktop}
-TAG=${TAG:=v10-$(date +%Y%m%d)}
+IMAGE=${IMAGE:=kylin-desktop-v10}
+TAG=${TAG:=$(date +%Y%m%d)}
 MIRROR=${MIRROR:=http://archive.kylinos.cn/kylin/KYLIN-ALL}
 SUITE=${SUITE:=10.1-2303-updates}
 EXTRA_SUITES=${EXTRA_SUITES:=10.1}
@@ -16,16 +19,9 @@ REGISTRY=${REGISTRY:=192.168.1.71:5000}
 
 v4Server=0
 v4Desktop=0
-contName=
-imageId=
-rootfsDir=
+
 noPolicy=0
 noPush=0
-
-SCRIPT_DIR=$(
-    cd "$(dirname "$0")"
-    pwd
-)
 
 usage() {
     cat <<EOF
@@ -114,21 +110,31 @@ if [ $# -gt 0 ]; then
 fi
 
 if [ $v4Server -ne 0 ]; then
-    IMAGE=${opt_image:=kylin-server}
-    TAG=${opt_tag:=v4-$(date +%Y%m%d)}
+    IMAGE=${opt_image:=kylin-server-v4}
+    TAG=${opt_tag:=$(date +%Y%m%d)}
     SUITE=${opt_suite:=4.0.2sp4-server}
     EXTRA_SUITES=${opt_extra_suites:=}
 fi
 
 if [ $v4Desktop -ne 0 ]; then
-    IMAGE=${opt_image:=kylin-desktop}
-    TAG=${opt_tag:=v4-$(date +%Y%m%d)}
+    IMAGE=${opt_image:=kylin-desktop-v4}
+    TAG=${opt_tag:=$(date +%Y%m%d)}
     SUITE=${opt_suite:=4.0.2sp4}
     EXTRA_SUITES=${opt_extra_suites:=}
 fi
 
 if [ $(id -u) -ne 0 ]; then
     echo >&2 "error - please run as root"
+    exit 1
+fi
+
+if [ -z "$(command -v buildah || :)" ]; then
+    echo >&2 "error - buildah not found"
+    exit 1
+fi
+
+if [ "$_CONTAINERS_USERNS_CONFIGURED" = "done" ]; then
+    echo >&2 "error - please do not run under buildah unshare"
     exit 1
 fi
 
@@ -150,30 +156,23 @@ EOF
     fi
 fi
 
-buildahPath="$(command -v buildah || :)"
-if [ -z "$buildahPath" ]; then
-    echo >&2 "error - buildah not found"
-    exit 1
-fi
-
-buildah() {
-    "$buildahPath" "$@"
-}
-
 # cleanup on exit
+
+contName=
+rootfsDir=
+imageId=
 
 trap exit INT TERM
 trap cleanup_on_exit EXIT
 cleanup_on_exit() {
     if [ $noPush -eq 0 ]; then
         test -n "$contName" && buildah rm $contName
-        test -n "$imageId" && buildah rmi $imageId
+        test -n "$imageId" && buildah rmi -f $imageId
     else
+        test -n "$rootfsDir" && buildah umount $contName
         test -n "$contName" && echo ">>> container: $contName"
         test -n "$imageId" && echo ">>> image id:  $imageId"
     fi
-
-    test -n "$rootfsDir" && buildah umount $contName
 }
 
 # setup
@@ -273,7 +272,8 @@ rm -f "$rootfsDir/var/cache/apt"/*.bin
 # locales
 rm -rf "$rootfsDir"/usr/{{lib,share}/locale,bin/localedef}
 # do not delete ISO8859-1.so, gdb needs it
-ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv 2>/dev/null | xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv/{}
+ls --hide ISO8859-1.so --hide gconv-modules "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv 2>/dev/null |
+    xargs -d '\n' -I{} rm -rf "$rootfsDir"/usr/lib/aarch64-linux-gnu/gconv/{}
 # docs and man pages
 rm -rf "$rootfsDir"/usr/share/{man,doc,info}
 # ldconfig
@@ -286,9 +286,12 @@ mkdir -p -m 755 "$rootfsDir"/var/cache/ldconfig
 buildah config --cmd /bin/bash $contName
 imageId=$(buildah commit $contName $IMAGE:$TAG)
 
+buildah tag $imageId $IMAGE:latest
+
 # push
 
 if [ $noPush -eq 0 ]; then
     buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:$TAG
+    buildah push --tls-verify=false $imageId $REGISTRY/$IMAGE:latest
     echo ">>> pushed \"$IMAGE:$TAG\" to registry"
 fi

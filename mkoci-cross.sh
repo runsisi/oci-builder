@@ -8,9 +8,7 @@ REGISTRY=${REGISTRY:=192.168.1.71:5000}
 
 TOOLS_URL=${TOOLS_URL:=http://192.168.1.71/dev-tools}
 
-contName=
-imageId=
-rootfsDir=
+noPolicy=0
 noPush=0
 
 usage() {
@@ -21,6 +19,7 @@ OPTIONS:
     -n, --name <name>           Image name (default "$IMAGE").
     -t, --tag <tag>             Image tag (default "$TAG").
     -r, --registry <registry>   Image registry to push (default "$REGISTRY").
+    --no-policy                 Do not generate default policy (i.e., "insecureAcceptAnything").
     --no-push                   Do not push image to registry (i.e., local container & image will be kept).
 EOF
     exit 1
@@ -48,6 +47,10 @@ while [ $# -gt 0 ]; do
         REGISTRY="$2"
         shift 2
         ;;
+    --no-policy)
+        noPolicy=1
+        shift
+        ;;
     --no-push)
         noPush=1
         shift
@@ -66,41 +69,61 @@ if [ $# -gt 0 ]; then
     usage
 fi
 
-if [ "$_CONTAINERS_USERNS_CONFIGURED" != "done" ]; then
-    echo >&2 "error - should run with buildah unshare"
-    echo >&2
-    usage
+if [ $(id -u) -ne 0 ]; then
+    echo >&2 "error - please run as root"
+    exit 1
 fi
 
-buildahPath="$(command -v buildah || :)"
-if [ -z "$buildahPath" ]; then
+if [ -z "$(command -v buildah || :)" ]; then
     echo >&2 "error - buildah not found"
     exit 1
 fi
 
-buildah() {
-    "$buildahPath" "$@"
+if [ "$_CONTAINERS_USERNS_CONFIGURED" = "done" ]; then
+    echo >&2 "error - please do not run under buildah unshare"
+    exit 1
+fi
+
+if [ ! -e /etc/containers/policy.json ]; then
+    if [ $noPolicy -ne 0 ]; then
+        echo >&2 "error - /etc/containers/policy.json does not exist"
+        exit 1
+    else
+        mkdir -p /etc/containers
+        cat >/etc/containers/policy.json <<EOF
+{
+    "default": [
+        {
+            "type": "insecureAcceptAnything"
+        }
+    ]
 }
+EOF
+    fi
+fi
 
 # cleanup on exit
+
+contName=
+rootfsDir=
+imageId=
 
 trap exit INT TERM
 trap cleanup_on_exit EXIT
 cleanup_on_exit() {
     if [ $noPush -eq 0 ]; then
         test -n "$contName" && buildah rm $contName
-        test -n "$imageId" && buildah rmi $imageId
+        test -n "$imageId" && buildah rmi -f $imageId
     else
+        test -n "$rootfsDir" && buildah umount $contName
         test -n "$contName" && echo ">>> container: $contName"
         test -n "$imageId" && echo ">>> image id:  $imageId"
     fi
-
-    test -n "$rootfsDir" && buildah umount $contName
 }
 
 # setup
 
-podman pull docker.io/library/ubuntu:23.04
+buildah pull docker.io/library/ubuntu:23.04
 
 contName=$(buildah from ubuntu:23.04)
 rootfsDir=$(buildah mount $contName)
@@ -108,8 +131,8 @@ rootfsDir=$(buildah mount $contName)
 # build
 
 sed -i 's@http://ports.ubuntu.com@http://mirrors.ustc.edu.cn@' $rootfsDir/etc/apt/sources.list
-buildah run $contName -- apt update
-buildah run $contName -- apt install -y \
+buildah run $contName -- apt-get update
+buildah run $contName -- apt-get install -y \
     make git vim python3 wget unzip \
     gcc g++ \
     gcc-x86-64-linux-gnu gcc-mingw-w64-x86-64
@@ -138,9 +161,9 @@ cat >$rootfsDir/root/.gitconfig <<EOF
     directory = *
 EOF
 
-buildah run $contName -- apt dist-upgrade -y
-buildah run $contName -- apt autoremove
-buildah run $contName -- apt clean
+buildah run $contName -- apt-get dist-upgrade -y
+buildah run $contName -- apt-get autoremove
+buildah run $contName -- apt-get clean
 rm -rf $rootfsDir/var/lib/apt/lists/*
 rm -rf $rootfsDir/usr/{{lib,share}/locale,bin/localedef}
 ls --hide ISO8859-1.so --hide gconv-modules $rootfsDir/usr/lib/aarch64-linux-gnu/gconv 2>/dev/null |
@@ -153,6 +176,8 @@ mkdir -p -m 755 $rootfsDir/var/cache/ldconfig
 # commit
 
 imageId=$(buildah commit $contName $IMAGE:$TAG)
+
+buildah tag $imageId $IMAGE:latest
 
 # push
 
