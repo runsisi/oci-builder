@@ -169,11 +169,10 @@ cleanup_on_exit() {
         test -n "$contName" && buildah rm $contName
         test -n "$imageId" && buildah rmi $imageId
     else
+        test -n "$rootfsDir" && buildah umount $contName
         test -n "$contName" && echo ">>> container: $contName"
         test -n "$imageId" && echo ">>> image id:  $imageId"
     fi
-
-    test -n "$rootfsDir" && buildah umount $contName
 }
 
 # setup

@@ -2,6 +2,9 @@
 
 set -e
 
+SCRIPT_DIR=$(cd -P $(dirname $0) && pwd -P)
+cd $SCRIPT_DIR
+
 if ! command -v rpm >/dev/null; then
     echo >&2 "error - please run on rpm based distributions"
     exit 1
@@ -11,8 +14,6 @@ IMAGE=${IMAGE:=kylin-server}
 TAG=${TAG:=v10-$(date +%Y%m%d)}
 REGISTRY=${REGISTRY:=192.168.1.71:5000}
 
-TEMP_REPO=/etc/yum.repos.d/mkoci.repo
-
 contName=
 imageId=
 rootfsDir=
@@ -21,11 +22,6 @@ noPush=0
 
 install_packages=(coreutils bash rootfiles)
 install_packages+=(yum)
-
-SCRIPT_DIR=$(
-    cd "$(dirname "$0")"
-    pwd
-)
 
 usage() {
     cat <<EOF
@@ -123,17 +119,16 @@ buildah() {
 trap exit INT TERM
 trap cleanup_on_exit EXIT
 cleanup_on_exit() {
-    rm -f $TEMP_REPO
+    rm -f $yum_config
 
     if [ $noPush -eq 0 ]; then
         test -n "$contName" && buildah rm $contName
         test -n "$imageId" && buildah rmi $imageId
     else
+        test -n "$rootfsDir" && buildah umount $contName
         test -n "$contName" && echo ">>> container: $contName"
         test -n "$imageId" && echo ">>> image id:  $imageId"
     fi
-
-    test -n "$rootfsDir" && buildah umount $contName
 }
 
 # setup
@@ -143,13 +138,13 @@ rootfsDir=$(buildah mount $contName)
 
 # build
 
-yum_config=/etc/yum.conf
 if [ -f /etc/dnf/dnf.conf ] && command -v dnf >/dev/null; then
-    yum_config=/etc/dnf/dnf.conf
     alias yum=dnf
 fi
 
-cat >$TEMP_REPO <<EOF
+yum_config=$(mktemp)
+
+cat >$yum_config <<EOF
 [mkoci]
 name = mkoci
 baseurl = file:///$SCRIPT_DIR/kylin
@@ -186,9 +181,9 @@ EOF
 
 # finalize
 
-yum -c "$yum_config" --installroot="$rootfsDir" --refresh -y upgrade
+yum -c $yum_config --installroot="$rootfsDir" --refresh -y upgrade
 
-yum -c "$yum_config" --installroot="$rootfsDir" -y clean all
+yum -c $yum_config --installroot="$rootfsDir" -y clean all
 
 # locales
 rm -rf "$rootfsDir"/usr/{{lib,share}/locale,bin/localedef,sbin/build-locale-archive}
