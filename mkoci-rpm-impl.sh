@@ -27,7 +27,9 @@ cleanup_on_exit() {
 
 # setup
 
-contName=$(buildah from scratch)
+buildah pull $REGISTRY/kylin-base:latest
+
+contName=$(buildah from kylin-base)
 rootfsDir=$(buildah mount $contName)
 
 # build
@@ -89,6 +91,8 @@ mkdir -p -m 755 "$rootfsDir"/var/cache/ldconfig
 
 buildah config --cmd /bin/bash $contName
 imageId=$(buildah commit $contName $IMAGE:$TAG)
+
+buildah tag $imageId $IMAGE:latest
 
 # push
 

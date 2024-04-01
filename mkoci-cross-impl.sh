@@ -73,6 +73,8 @@ mkdir -p -m 755 $rootfsDir/var/cache/ldconfig
 
 imageId=$(buildah commit $contName $IMAGE:$TAG)
 
+buildah tag $imageId $IMAGE:latest
+
 # push
 
 if [ $noPush -eq 0 ]; then
