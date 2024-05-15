@@ -138,17 +138,16 @@ buildah run $contName -- apt-get install -y \
     gcc-x86-64-linux-gnu gcc-mingw-w64-x86-64
 
 wget -P $rootfsDir/opt $TOOLS_URL/go1.22.1.linux-arm64.tar.gz
-wget -P $rootfsDir/opt $TOOLS_URL/node-v20.11.1-linux-arm64.tar.xz
-wget -P $rootfsDir/opt $TOOLS_URL/node-sass.node
 tar xzf $rootfsDir/opt/go1.22.1.linux-arm64.tar.gz -C $rootfsDir/opt
-tar xf $rootfsDir/opt/node-v20.11.1-linux-arm64.tar.xz -C $rootfsDir/opt
 rm -f $rootfsDir/opt/go1.22.1.linux-arm64.tar.gz
+
+wget -P $rootfsDir/opt $TOOLS_URL/node-v20.11.1-linux-arm64.tar.xz
+tar xf $rootfsDir/opt/node-v20.11.1-linux-arm64.tar.xz -C $rootfsDir/opt
 rm -f $rootfsDir/opt/node-v20.11.1-linux-arm64.tar.xz
 
 echo 'export PATH=/opt/go/bin:/opt/node-v20.11.1-linux-arm64/bin:$PATH' >>$rootfsDir/root/.bashrc
 echo 'registry=https://registry.npmmirror.com/' >>$rootfsDir/root/.npmrc
 echo 'ELECTRON_MIRROR=https://npmmirror.com/mirrors/electron/' >>$rootfsDir/root/.npmrc
-echo 'export SASS_BINARY_PATH=/opt/node-sass.node' >>$rootfsDir/root/.bashrc
 cat >$rootfsDir/root/.gitconfig <<EOF
 [alias]
     br = branch
