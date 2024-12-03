@@ -209,7 +209,7 @@ Status: install ok installed" >> "$TARGET/var/lib/dpkg/status"
 	x_core_install base-passwd
 	x_core_install base-files
 	p; progress $baseprog $bases INSTCORE "Installing core packages" #3
-	x_core_install dpkg
+	# x_core_install dpkg
 
 	if [ ! -e "$TARGET/etc/localtime" ]; then
 		ln -sf /usr/share/zoneinfo/UTC "$TARGET/etc/localtime"

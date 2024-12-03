@@ -12,10 +12,10 @@ fi
 
 IMAGE=${IMAGE:=kylin-desktop-v10}
 TAG=${TAG:=$(date +%Y%m%d)}
-MIRROR=${MIRROR:=http://archive.kylinos.cn/kylin/KYLIN-ALL}
-SUITE=${SUITE:=10.1-2303-updates}
-EXTRA_SUITES=${EXTRA_SUITES:=10.1}
-REGISTRY=${REGISTRY:=192.168.1.71:5000}
+MIRROR=${MIRROR:=https://archive.kylinos.cn/kylin/KYLIN-ALL}
+SUITE=${SUITE:=10.1}
+EXTRA_SUITES=${EXTRA_SUITES:=}
+REGISTRY=${REGISTRY:=oci.xcube.com}
 
 v4Server=0
 v4Desktop=0
@@ -206,9 +206,17 @@ export DEBOOTSTRAP_DIR="$SCRIPT_DIR/debootstrap"
     --no-check-gpg \
     --components main,universe,multiverse,restricted \
     --variant minbase \
+    --foreign \
     $extra_cmdline \
     $SUITE "$rootfsDir" \
     $MIRROR gutsy
+
+cp -f $SCRIPT_DIR/dpkg $rootfsDir/usr/bin/dpkg
+
+export DEBOOTSTRAP_DIR="$rootfsDir/debootstrap"
+"$DEBOOTSTRAP_DIR/debootstrap" \
+    --second-stage \
+    --second-stage-target "$rootfsDir"
 
 # tweaks
 
